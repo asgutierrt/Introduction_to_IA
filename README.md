@@ -7,4 +7,4 @@ Learning exercise about the training of a multilayer perceptron (MLP), a type of
 This section explores the use of NN in classification, regression, and feature extraction. It implements autoencoders to manipulate data dimensionality and assess their
 impact on regression tasks. The CNN LeNET5’s application for MNIST dataset classification, and a validation on dataset created in the classroom. Additionally, Generative Adversarial Networks (GANs) are used for their generative and discriminative modeling, once again validated using the classroom digits dataset. One last network, Style-GAN, explores image generation and modification. 
 
-* Autoencoders and Convolutional Neural Networks (LeNet5) *Generative adversarial networks and style transfer
+\* Autoencoders and Convolutional Neural Networks (LeNet5) \* Generative adversarial networks and style transfer
