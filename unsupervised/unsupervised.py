@@ -55,4 +55,4 @@ if __name__ == '__main__':
     x_ref=0
     bp = Babyplot(background_color="#ffffddff", turntable=True)
     bp.add_plot(X, "pointCloud", "categories", G[x_ref], {"colorScale": "Dark2"})
-    bp
+    bp.save_as_html('groups.html') # abrir en el navegador
