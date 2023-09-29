@@ -1,7 +1,6 @@
 # for interactive plots
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-import plotly.io as pio
 
 def plot_clusters (X,G0,plot_dims,annotations=[],norma='',html_name=''):
   # plot all subsets on G0 on the same figure

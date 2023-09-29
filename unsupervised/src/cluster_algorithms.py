@@ -16,7 +16,7 @@ def unclassified_points(points,G0):
 def naive_boxes (X,D,n_groups=3,norm_ix=0):
     # clasifica segun una distancia threshold calculada con la minima y maxima distancia entre puntos en el dataset
     G_threshold=np.apply_along_axis(threshold_distance, 0, D[norm_ix].flatten(),
-                                    n_groups=n_groups).astype(int).reshape((len(X),-1))
+                                    n_groups=n_groups).reshape((len(X),-1))
     
     x_ref=0 # el primer subconjunto se forma con los puntos cerca a x_ref
     ref_points=[] # almacenar que punto de referencia han sido usados
@@ -54,13 +54,12 @@ def naive_kn (X,D,k_n=50,norm_ix=0):
         mask=G[x_ref][:k_n]
         G0[mask,i]=1
 
-        # find the closest point to x_ref that is not yet classified
+        # find which point has not been assigned to any group and is closest to x_ref
         # make it the next reference point
-        next_x_ref=G[x_ref][k_n:]
-
-        # which point has not been assigned to any group and is closest to x_ref
-        ix_next, end_kn=G0[next_x_ref].sum(axis=1).argmin(), G0[next_x_ref].sum(axis=1).min() 
-        x_ref=next_x_ref[ix_next]
+        for x_ref in G[x_ref][k_n:]: # explore if other close neighbors have not been assigned
+            end_kn=True
+            if G0[x_ref].sum()==0: 
+                end_kn=False; break
         i+=1
 
     return G0[:,:len(ref_points)], ref_points # drop unnecesary columns
