@@ -2,21 +2,14 @@ from modules.load_data import *
 from modules.distances import *
 from modules.cluster_algorithms import *
 from modules.visualizations import *
-
 from os.path import join
-
-filename = 'water_potability.txt'
-
-# store info on report folder
-fig_path= join('..','reports','figures')
-results_path= join('..','reports','group_matrix')
-filepath = join('..','data',filename)
+from os import getcwd
 
 def main(filename='iris'):
     # store info on report folder
-    fig_path= join('..','reports','figures')
-    results_path= join('..','reports','group_matrix')
-    filepath = join('..','data',filename)
+    fig_path= join(getcwd(),'reports','figures')
+    results_path= join(getcwd(),'reports','group_matrix')
+    filepath = join(getcwd(),'data',filename)
 
     # load data
     X,_,_ = load_data(filepath)
@@ -60,4 +53,5 @@ def main(filename='iris'):
         plot_clusters(X,G0,plot_dims,ref_points,normas[norma_i],fig_name)
 
 if __name__=="__main__":
-    main(filepath='iris')
+    #main(filename='water_potability.txt')
+    main(filename='iris')

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn import datasets
 from sklearn.preprocessing import OneHotEncoder
-
+ 
 def encode_array (x):
   enc = OneHotEncoder(handle_unknown='ignore')
   return enc.fit_transform(x.reshape((-1,1))).toarray()
@@ -19,6 +19,12 @@ def load_data(filepath):
         iris = datasets.load_iris()
         df = pd.DataFrame(data= np.c_[iris['data'], iris['target']],
                      columns= iris['feature_names'] + ['target'])  
+    
+    # drop columns that are more than 40% empty
+    empty_tol=0.4
+    df.dropna(axis=1,thresh=df.shape[0]*(1-empty_tol),inplace=True) 
+    # drop datapoints that have missing values
+    df.dropna(axis=0,inplace=True)
     
     # hot encode cathegorical columns
     encode_cols=[] # ['Potability'] ['target']
