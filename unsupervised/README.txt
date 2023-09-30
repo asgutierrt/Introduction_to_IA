@@ -7,4 +7,4 @@
 # output
 main returns one .txt file for each classification method where each line
 
-# run 
+# run notebook on Google Colab for in-notebook visualizations
