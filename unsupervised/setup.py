@@ -38,6 +38,6 @@ setup(
     description='A short description of your project',
     packages=find_packages(),
     install_requires=requirements,
-    python_requires='>=3.7',
+    python_requires='==3.8',
     cmdclass={'install': CustomInstallCommand},
 )
