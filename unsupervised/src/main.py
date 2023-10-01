@@ -3,8 +3,8 @@ from modules.distances import *
 from modules.cluster_algorithms import *
 from modules.support_functions import *   
 
-from os.path import join
-from os import getcwd
+from os.path import join, dirname
+from os import chdir, getcwd
 
 
 def main(filename='iris'):
@@ -17,10 +17,14 @@ def main(filename='iris'):
     Returns:
         None
     """
+    # set working directory
+    project_wd=dirname(dirname(__file__))
+    chdir(project_wd)
+
     # information paths
-    filepath = join(getcwd(),'data',filename)
-    fig_path= join(getcwd(),'reports','figures')
-    results_path= join(getcwd(),'reports','group_matrix')
+    filepath = join(project_wd,'data',filename)
+    fig_path= join(project_wd,'reports','figures')
+    results_path= join(project_wd,'reports','group_matrix')
 
     # load data
     X,_ = load_data(filepath)
