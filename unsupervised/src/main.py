@@ -47,5 +47,5 @@ def main(filename='iris'):
                      plot_dims, 'kn_norm_%s'%normas[norma_i], k_n=k_n)
 
 if __name__=="__main__":
-    # main(filename='water_potability.txt')
+    #main(filename='water_potability.txt')
     main() #iris

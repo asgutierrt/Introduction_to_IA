@@ -23,7 +23,7 @@ def load_data(filepath, **kwargs):
     df = read_file (filepath)
 
     # do an exploratory analysis
-
+    df_describe = explore_data(df)
     
     ## deal with missing values
     # drop columns that are more than 40% empty
@@ -39,7 +39,26 @@ def load_data(filepath, **kwargs):
 
     ## normalize data
     X = (X-np.min(X,axis=0))/(np.max(X,axis=0)-np.min(X,axis=0))*2-1
-    return X, (len(X), len(X[0])), df
+    return X, (len(X), len(X[0]))
+
+def explore_data(df):
+    ''' 
+    1. number of ocurrences of each class: check for imbalanced data
+    2. basic statistics of the data: 
+        - check for (very) different scales which is a problem for distance based algorithms.
+        either way, the data is normalized in the pipeline.
+        - nan values: count missing values in each feature
+    '''
+    print("exploration of data:\n")
+    print("1. number of ocurrences of each class: check for imbalanced data")
+    print(df.iloc[:,-1].value_counts().to_string()+"\n")
+    print("2. basic statistics on the data: check scales of the values and nan value count\n")
+    df_describe=df.describe()
+    df_describe.loc['scale']=df_describe.loc['mean'].apply(lambda x: 'e'+('%e'%x).split('e')[1])
+    df_describe.loc['nan count']=df.isna().sum()
+    print(df_describe.to_string())
+    return df_describe
+
 
 def read_file (filepath):
     """ Reads file in filepath and returns a pandas dataframe.
