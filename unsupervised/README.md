@@ -7,6 +7,7 @@
 1. run main.py from the src folder.
     - main module receives a data file from the data folder as input.
     - place the data file in the data folder and change the input file name in main.py.
+    - by default runs on the iris dataset.
 
 2. output: main returns several classification matrix in a .txt format.
 
