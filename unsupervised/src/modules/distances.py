@@ -6,29 +6,30 @@ def covarianza_inversa(X):
     return np.linalg.pinv(np.cov(X,rowvar=False)) 
 
 def calculate_norms (X,Xi,norma,cov_i):
-  """
-  Calculates different norms between two data points.
+    """
+    Calculates different norms between two data points.
 
-  Args:
-      X (numpy.ndarray): Data points.
-      Xi (numpy.ndarray): Data point to compare eachone in X.
-      norma (str): The norm to calculate.
-      cov_i (numpy.ndarray): The covariance matrix for the data.
+    Args:
+        X (numpy.ndarray): Data points.
+        Xi (numpy.ndarray): Data point to compare each point in X.
+        norma (str): The norm to calculate.
+        cov_i (numpy.ndarray): The covariance matrix for the data.
 
-  Returns:
-      D (numpy.ndarray): The norm between the data points and Xi.
-  """
-  if norma=='coseno':
-      num=np.multiply(X,Xi).sum(axis=1)
-      den=np.multiply(np.linalg.norm(X,axis=1,ord=2), np.linalg.norm(Xi,ord=2))
-      return 1-num/den
-  if norma=='mahalanobis': 
-      delta=X-Xi
-      return np.multiply(np.matmul(delta,cov_i),delta).sum(axis=1)
-  if norma=='manhattan': p=1
-  if norma=='euclidea': p=2
-  if 'Lp' in norma: p=int(norma.split('=')[1])
-  return (abs(X-Xi)**p).sum(axis=1)**(1/p)
+    Returns:
+        D (numpy.ndarray): The norm between the data points and Xi.
+    """
+    if norma=='coseno':
+        num=np.multiply(X,Xi).sum(axis=1)
+        den=np.multiply(np.linalg.norm(X,axis=1,ord=2), np.linalg.norm(Xi,ord=2))
+        return 1-num/den
+    if norma=='mahalanobis': 
+        delta=X-Xi
+        return np.multiply(np.matmul(delta,cov_i),delta).sum(axis=1)
+    if norma=='manhattan': p=1
+    if norma=='euclidea': p=2
+    if 'Lp' in norma: p=int(norma.split('=')[1])
+    return (abs(X-Xi)**p).sum(axis=1)**(1/p)
+  
 
 def get_distance_matrix(X,Y,cov_i,norms):
   """

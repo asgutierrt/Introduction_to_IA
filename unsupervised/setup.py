@@ -14,12 +14,13 @@ class CustomInstallCommand(install):
         # Define the virtual environment directory
         venv_dir = path.join(getcwd(), venv_name)
         activate_script = ["source", path.join(venv_dir, "bin", "activate")]
-        pip_exe = path.join(venv_dir, "Scripts", "pip3.exe")
+        pip_exe = path.join(venv_dir, "bin", "pip")
         python_exe=path.join(venv_dir, "Scripts", "python.exe")
 
         if platform.system()=="Windows": 
             #venv_dir = venv_dir.replace("/", "\\")
             activate_script = [path.join(venv_dir, "Scripts", "activate.bat")]
+            pip_exe = path.join(venv_dir, "Scripts", "pip3.exe")
             #pip_exe = pip_exe.replace("/", "\\")
         
         # Create a virtual environment

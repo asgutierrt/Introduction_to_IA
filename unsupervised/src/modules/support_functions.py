@@ -1,6 +1,8 @@
 from numpy.ma import masked_array as masked_array
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
+from itertools import product
+
 
 def threshold_distance(x,n_groups):
     """
@@ -19,6 +21,18 @@ def encode_array (x):
   enc = OneHotEncoder(handle_unknown='ignore')
   return enc.fit_transform(x.reshape((-1,1))).toarray()
 
-def save_results(array,file_name):
+def save_results(array,array_names,file_name):
     """ Saves a numpy.ndarray to a file. """
-    np.savetxt(file_name, array, delimiter=",", fmt='%i')
+    with open(file_name,'w') as f:
+        for sub_array, sub_array_name in zip(array,array_names):
+            f.write('with %s distance:\n'%sub_array_name)
+            np.savetxt(f, sub_array, fmt='%.2f', delimiter=',')
+            f.write('\n')
+
+
+def make_grid(N,m,**kwargs):
+    """ Makes a grid of points in the unit square. """
+    malla=lambda m, n_intervals: np.array(list(product(np.arange(n_intervals +1)*1/n_intervals,repeat=m)))
+    n_grid_intervals = lambda N,m: int(np.exp(np.log(N)/m)-1)
+    n_intervals=kwargs['n_intervals'] if 'n_intervals' in kwargs else min(2,n_grid_intervals(N,m))
+    return malla(m,n_intervals)

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn import datasets
 
-def load_data(filepath, **kwargs):
+def load_data(filepath, verbose=False, **kwargs):
     """
     Args:
         filepath (str): supports .json, .txt, and .csv files.
@@ -18,12 +18,13 @@ def load_data(filepath, **kwargs):
     """
     empty_tol=kwargs['empty_tol'] if 'empty_tol' in kwargs else 0.4
     encode_cols=kwargs['encode_cols'] if 'encode_cols' in kwargs else []
-
+ 
     # read file
     df = read_file (filepath)
 
     # do an exploratory analysis
-    df_describe = explore_data(df)
+    if verbose:
+        explore_data(df,verbose=verbose)
     
     ## deal with missing values
     # drop columns that are more than 40% empty
@@ -36,12 +37,13 @@ def load_data(filepath, **kwargs):
 
     ## to numpy
     X = df_encoded.iloc[:,:-1].to_numpy()
+    #y = df_encoded.iloc[:,-1].to_numpy()
 
-    ## normalize data
+    ## normalize features
     X = (X-np.min(X,axis=0))/(np.max(X,axis=0)-np.min(X,axis=0))*2-1
-    return X, (len(X), len(X[0]))
+    return X
 
-def explore_data(df):
+def explore_data(df, verbose=False):
     ''' 
     1. number of ocurrences of each class: check for imbalanced data
     2. basic statistics of the data: 
@@ -51,7 +53,9 @@ def explore_data(df):
     '''
     print("exploration of data:\n")
     print("1. number of ocurrences of each class: check for imbalanced data")
-    print(df.iloc[:,-1].value_counts().to_string()+"\n")
+    labels=df.iloc[:,-1].value_counts().reset_index().rename(columns={0: "count"}).set_index(df.columns[-1])
+    labels['%']=labels['count']/labels['count'].sum()*100
+    print(labels.to_string()+"\n")
     print("2. basic statistics on the data: check scales of the values and nan value count\n")
     df_describe=df.describe()
     df_describe.loc['scale']=df_describe.loc['mean'].apply(lambda x: 'e'+('%e'%x).split('e')[1])
