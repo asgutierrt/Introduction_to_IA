@@ -18,8 +18,9 @@ def encode(X, **kwargs):
   auto_encoder.compile(loss='mae',metrics=['mae'],optimizer='adam')
   auto_encoder.fit(X, X, epochs=15, batch_size=32, verbose=0) 
   if 'verbose' in kwargs and kwargs['verbose']:
+    print('encoder MLP information')
     print(auto_encoder.encoder.summary())
-    print('other:')
+    print('decoder MLP information')
     print(auto_encoder.decoder.summary())
   return auto_encoder.get_layer('sequential').predict(X)
     

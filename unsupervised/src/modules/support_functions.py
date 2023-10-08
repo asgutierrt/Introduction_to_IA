@@ -29,10 +29,10 @@ def save_results(array,array_names,file_name):
             np.savetxt(f, sub_array, fmt='%.2f', delimiter=',')
             f.write('\n')
 
-
-def make_grid(N,m,**kwargs):
+def make_grid(X,**kwargs):
     """ Makes a grid of points in the unit square. """
     malla=lambda m, n_intervals: np.array(list(product(np.arange(n_intervals +1)*1/n_intervals,repeat=m)))
     n_grid_intervals = lambda N,m: int(np.exp(np.log(N)/m)-1)
-    n_intervals=kwargs['n_intervals'] if 'n_intervals' in kwargs else min(2,n_grid_intervals(N,m))
-    return malla(m,n_intervals)
+    n_intervals=kwargs['n_intervals'] if 'n_intervals' in kwargs else min(2,n_grid_intervals(kwargs['N'],X.shape[1]))
+    grid_01 = malla(X.shape[1],n_intervals)
+    return (X.max(axis=0)-X.min(axis=0))*grid_01+X.min(axis=0)

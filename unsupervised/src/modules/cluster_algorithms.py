@@ -1,7 +1,7 @@
-import numpy as np
 from modules.support_functions import *
+from modules.visualizations import plot_clusters
 from os.path import join
-from modules.visualizations import plot_clusters, subplots
+import numpy as np
 
 """
 This module contains implementations of various clustering algorithms.
@@ -21,13 +21,12 @@ Functions:
 """
 
 class ClusterProblem:
-    def __init__(self, X_name, normas, results_path, figs_path, plot_dims):
+    def __init__(self, X_name, normas, results_path, figs_path):
         # paths to save results and plots
         self.result_path = lambda cluster_func_name: join(results_path, cluster_func_name+'_'+X_name+'.txt')
         self.fig_path = lambda cluster_func_name: join(figs_path, cluster_func_name+'_'+X_name+'.html')
 
         # data to plot: subtitles (with norm identifier) and dimensions
-        self.plot_dims = plot_dims
         self.normas = normas
         self.add_norm_name_to = lambda name: [name+'_'+norma for norma in normas]
 
@@ -39,29 +38,12 @@ class ClusterProblem:
     def do_save_clusters(self,G,cluster_func_name):
         save_results(G,self.normas,self.result_path(cluster_func_name))
 
-    def do_plot_clusters(self, X, G, G_ref_points, cluster_func_name, individual_results=False):
-        if individual_results:
-            for G0, ref_points, cluster_name in zip(G, G_ref_points, self.add_norm_name_to(cluster_func_name)):
-                plot_clusters(
-                    X=X, G0=G0, 
-                    plot_dims=self.plot_dims, annotations=ref_points, 
-                    title='classification using '+cluster_name, 
-                    html_name=self.fig_path(cluster_name),
-                    )
-        else:
-            subplots(
-                X=X,G0_list=G,
-                plot_dims=self.plot_dims,annotations_list=G_ref_points,
-                subtitles=self.add_norm_name_to('distance'),
-                title='classificacion using %s'%cluster_func_name,
-                html_name=self.fig_path(cluster_func_name),
-                )
+    def do_eval_clusters():
+        return 0
     
     def do_ClusterPipeline(self, X, D, cluster_func, cluster_func_name, **kwargs):
         G, G_ref_points = self.do_cluster(D, cluster_func, **kwargs)
         self.do_save_clusters(G, cluster_func_name)
-        if len(self.plot_dims)>2:
-            self.do_plot_clusters(X, G, G_ref_points, cluster_func_name, individual_results=False)
         return G, G_ref_points
 
 
@@ -154,7 +136,7 @@ def naive_kn (D,**kwargs):
     k_n=kwargs['k_n'] if 'k_n' in kwargs else 50
 
     # get indixes that sort the distance matrix
-    G=np.argsort(D,axis=1)
+    G=np.argsort(D)
 
     # start with the first point
     x_ref=0
@@ -209,7 +191,7 @@ def density_substraction(D,ra,kind='substractive',**kwargs):
                 value = np.exp(-radius(ra) * D_intra[i,j])
                 # update density
                 X_density[i] += value; X_density[j] += value
-    
+
     # 2. find cluster centers
     ref_points=[]
     
@@ -235,7 +217,10 @@ def density_substraction(D,ra,kind='substractive',**kwargs):
     G=np.zeros(shape=(D_intra.shape[1],len(ref_points)))
     for group, centroid_ix in enumerate(ref_points):
         G[:,group]=np.exp(-radius(ra) * D_intra[centroid_ix,:])
-    G/=G.sum(axis=1,keepdims=True)
+    
+    point_densities_sum = G.sum(axis=1,keepdims=True)
+    G/=np.where(point_densities_sum==0, np.nan, point_densities_sum)
+    G=np.nan_to_num(G)
 
     ## define threshold to define if a point belongs to a group or not
     mask=G>G.mean(axis=1,keepdims=True)

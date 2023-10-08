@@ -20,10 +20,11 @@ def load_data(filepath, verbose=False, **kwargs):
     encode_cols=kwargs['encode_cols'] if 'encode_cols' in kwargs else []
  
     # read file
-    df = read_file (filepath)
+    df = read_file(filepath)
 
     # do an exploratory analysis
     if verbose:
+        print('data loaded from %s'%filepath)
         explore_data(df,verbose=verbose)
     
     ## deal with missing values
@@ -51,7 +52,6 @@ def explore_data(df, verbose=False):
         either way, the data is normalized in the pipeline.
         - nan values: count missing values in each feature
     '''
-    print("exploration of data:\n")
     print("1. number of ocurrences of each class: check for imbalanced data")
     labels=df.iloc[:,-1].value_counts().reset_index().rename(columns={0: "count"}).set_index(df.columns[-1])
     labels['%']=labels['count']/labels['count'].sum()*100

@@ -21,7 +21,8 @@ def calculate_norms (X,Xi,norma,cov_i):
     if norma=='coseno':
         num=np.multiply(X,Xi).sum(axis=1)
         den=np.multiply(np.linalg.norm(X,axis=1,ord=2), np.linalg.norm(Xi,ord=2))
-        return 1-num/den
+        den=np.where(den==0, np.nan, den)
+        return np.nan_to_num(1-num/den)
     if norma=='mahalanobis': 
         delta=X-Xi
         return np.multiply(np.matmul(delta,cov_i),delta).sum(axis=1)
@@ -30,7 +31,6 @@ def calculate_norms (X,Xi,norma,cov_i):
     if 'Lp' in norma: p=int(norma.split('=')[1])
     return (abs(X-Xi)**p).sum(axis=1)**(1/p)
   
-
 def get_distance_matrix(X,Y,cov_i,norms):
   """
   Calculates the distance matrix between two sets of data points.
@@ -47,7 +47,7 @@ def get_distance_matrix(X,Y,cov_i,norms):
   """
   D=np.zeros(shape=(len(norms),len(X),len(Y)))
   for i,norm in enumerate(norms):
-    D[i]=np.array([calculate_norms(X,xi,norm,cov_i) for xi in Y]).reshape(len(X),-1)
+    D[i]=np.array([calculate_norms(X,xi,norm,cov_i) for xi in Y]).T
   return D
 
 def plot_distances(D,norms,png_name):

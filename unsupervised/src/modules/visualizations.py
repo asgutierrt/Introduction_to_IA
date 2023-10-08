@@ -1,66 +1,51 @@
-# for interactive plots
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
+import seaborn as sns
 
-def plot_clusters (X,G0,plot_dims,annotations=[],title='',html_name=''):
-  # plot all subsets on G0 on the same figure
-  fig = go.Figure()
+def plot_clusters(i,X,G,G_ref_points,grid=None):
+    df_plot=df_plot_PairGrid(i,X,G,G_ref_points,grid=grid)
+    g=sns.PairGrid(df_plot,vars=range(X.shape[1]))
+    g.map_offdiag(sns.scatterplot,palette='tab10',
+                hue=df_plot['group'],style=df_plot['type'],markers={"reference": "X","point": "$\circ$"},
+                size=df_plot['group'],sizes=(30, 50),alpha=0.5)
+    
+    if grid is None:
+      g.map_diag(sns.kdeplot,hue=df_plot['group'])
 
-  # especial formating in case groups overlap 
-  subset_overlap = sum(G0.sum(axis=1)!=1)!=0
-  marker_symbol='circle-open' if subset_overlap else 'circle' 
-  marker_size = lambda i: i+5 if subset_overlap else 5
+    # format legend
+    g.add_legend()
+    return g.figure
 
-  n_subsets=G0.shape[1] # number of groups in G0
-  for i in range(n_subsets):
-    # filter points in group i
-    subset_filter=G0[:,i].astype(bool) 
+def df_plot_PairGrid(i,X,G,G_ref_points,grid=None):
+    df_X=pd.DataFrame(np.hstack([X,np.ceil(G[i])*range(1,G[i].shape[1]+1)]))
+    mask=G[i].sum(axis=1)==0
 
-    fig.add_scatter3d(
-      # data points
-      x=X[subset_filter,plot_dims[0]], 
-      y=X[subset_filter,plot_dims[1]], 
-      z=X[subset_filter,plot_dims[2]],
-      # markers
-      mode='markers', marker_symbol=marker_symbol, marker_size=marker_size(i),
-      # color by group: share colorbar across groups
-      marker=dict(color=[i+1]*sum(subset_filter),
-                  colorscale='Viridis', 
-                  opacity=1, cmin=0.8, cmax=n_subsets),
-    )
+    # classified points
+    df_melted_Class=df_X[~mask].melt(id_vars=range(X.shape[1]), value_name='group')
+    df_melted_Class=df_melted_Class.drop('variable',axis=1)[df_melted_Class['group']!=0].sort_values('group')
+    df_melted_Class['type']='point'
 
-  # annotate points 
-  if annotations!=[]:
-    fig.add_scatter3d(
-      # data points
-      x=X[annotations,plot_dims[0]], 
-      y=X[annotations,plot_dims[1]], 
-      z=X[annotations,plot_dims[2]], 
-      # annotations
-      mode='markers+text', marker=dict(color='red'), marker_size=4, 
-      text=['x[%i]'%n for n in annotations],
-    )
-
-  # add title, and set tight layout
-  fig.update_layout(title_text=title, showlegend=False, margin=dict(l=0, r=0, t=40, b=0))
-  # save figure
-  if html_name!='': fig.write_html(html_name)
-  return fig
-
-def subplots(X,G0_list,plot_dims,annotations_list,subtitles,title,html_name=''):
-  n_subplots = len(G0_list)
-  max_cols=3
-  nrows=1+(n_subplots-1)//max_cols; ncols=min(n_subplots, max_cols)
-  fig = make_subplots(rows=nrows, cols=ncols, 
-                      specs=[[{'type': 'surface'}]*ncols]*nrows,
-                      subplot_titles=subtitles)
-
-  for fig_ix in range(n_subplots):
-    sub_fig = plot_clusters(X,G0_list[fig_ix],plot_dims,annotations_list[fig_ix])
-    for trace in sub_fig.data:
-      fig.add_trace(trace, row=1+int(fig_ix/max_cols), col=1+fig_ix%max_cols)
-
-  # tight layout
-  fig.update_layout(autosize=True, title_text=title, showlegend=False)
-  if html_name!='': fig.write_html(html_name)
-  return fig
+    # not classified points
+    df_melted_notClass=df_X[mask].melt(id_vars=range(X.shape[1]), value_name='group')
+    df_melted_notClass=df_melted_notClass.drop('variable',axis=1).sort_values('group')
+    df_melted_notClass[['group','type']]='not classified','point'
+    
+    if grid is not None:
+      # grid points
+      df_grid=pd.DataFrame(grid)
+      df_grid[['group','type']]='grid','point'
+      
+      # reference points in grid
+      df_melted_ref=df_grid.loc[G_ref_points[i]]
+      df_grid.drop(index=G_ref_points[i],inplace=True)
+      df_melted_ref['group']=range(1,df_melted_ref.shape[0]+1)
+      df_melted_ref['type']='reference'
+      
+      return pd.concat([df_melted_Class,df_melted_notClass,df_melted_ref,df_grid])
+    else:
+      # reference points in X
+      df_melted_ref=df_X.loc[G_ref_points[i],range(X.shape[1])]
+      df_melted_ref['group']=range(1,df_melted_ref.shape[0]+1)
+      df_melted_ref['type']='reference'
+      
+      return pd.concat([df_melted_Class,df_melted_notClass,df_melted_ref])
