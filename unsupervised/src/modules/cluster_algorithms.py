@@ -1,5 +1,6 @@
 from modules.support_functions import *
 from modules.visualizations import plot_clusters
+from modules.distances import get_distance_matrix
 from os.path import join
 import numpy as np
 
@@ -30,9 +31,10 @@ class ClusterProblem:
         self.normas = normas
         self.add_norm_name_to = lambda name: [name+'_'+norma for norma in normas]
 
-    def do_cluster(self, D, cluster_func, **kwargs):
+    def do_cluster(self, cluster_func, **kwargs):
         '''Iterate over the distance matrix and apply the clustering algorithm to each row'''
-        G, G_ref_points = zip(*[cluster_func(sub_D,**kwargs) for sub_D in D])
+        D=kwargs.pop('D') if 'D' in kwargs else self.normas
+        G, G_ref_points = zip(*[cluster_func(D[i],**kwargs) for i in range(len(self.normas))])
         return G, G_ref_points
 
     def do_save_clusters(self,G,cluster_func_name):
@@ -41,8 +43,8 @@ class ClusterProblem:
     def do_eval_clusters():
         return 0
     
-    def do_ClusterPipeline(self, X, D, cluster_func, cluster_func_name, **kwargs):
-        G, G_ref_points = self.do_cluster(D, cluster_func, **kwargs)
+    def do_ClusterPipeline(self, cluster_func, cluster_func_name, **kwargs):
+        G, G_ref_points = self.do_cluster(cluster_func, **kwargs)
         self.do_save_clusters(G, cluster_func_name)
         return G, G_ref_points
 
@@ -164,68 +166,53 @@ def naive_kn (D,**kwargs):
 
     return G0[:,:len(ref_points)], ref_points # drop unnecesary columns
 
-def density_substraction(D,ra,kind='substractive',**kwargs):
-    
+def density_substraction(X,D,D_intra,D_entre,ra,kind,stop_criteria,**kwargs):
     # define parameters
     if kind=='substractive':
         D_intra=D_entre=D
-    if kind=='mountain':
-        D_intra=D[0]; D_entre=D[1]
     
-    stop_criteria=kwargs['stop_criteria'] if 'stop_criteria' in kwargs else 'k_centroids'
     rb=kwargs['rb'] if 'rb' in kwargs else ra*1.15 
-    radius=lambda r: 4/r**2
+    radius=lambda r: 1/(4*r**2) # radius of the ball
 
     # 1. initialize densities
-    if kind=='mountain':
-        # define potential cluster centers based on density over balls of radius ra
-        X_density=np.apply_along_axis(lambda x: np.exp(-radius(ra) * x), 0, D_intra).sum(axis=1)
-        
-    if kind=='substractive':
-        # define potential cluster centers based on density over balls of radius ra
-        X_density=np.zeros(D_intra.shape[0])
-
-        # evaluate density around each data point (not grid points)
-        for i in range(D_intra.shape[0]):
-            for j in range(i + 1, D_intra.shape[0]): # make use of simmetry of the distance matrix
-                value = np.exp(-radius(ra) * D_intra[i,j])
-                # update density
-                X_density[i] += value; X_density[j] += value
+    X_density=np.apply_along_axis(lambda x: np.exp(-radius(ra) * x), 0, D_intra).sum(axis=1)
 
     # 2. find cluster centers
     ref_points=[]
     
     while True:
         # find the best centroid (the one with the highest density)
-        best_centroid_ix=X_density.argmax()
+        best_centroid_ix=np.nanargmax(X_density)
         centroid_density=X_density[best_centroid_ix]
         
         # reduce density values on a radius rb around chosen centroid
-        for i in range(X_density.shape[0]):
-            value = np.exp(-radius(rb) * D_entre[best_centroid_ix,i])
-            # update density
-            X_density[i] -= centroid_density*value
+        reduction_factor = np.apply_along_axis(lambda x: np.exp(-radius(rb) * x), 0, D_entre[best_centroid_ix])
+        X_density -= centroid_density*reduction_factor
         
         # update stop criteria
         threshold=kwargs['epsilon']*centroid_density if stop_criteria=='low_density' and len(ref_points)==0 else 0
-        stop=update_stop_criteria(stop_criteria, ref_points=ref_points, threshold=threshold, centroid_density=centroid_density, **kwargs)
+        stop=update_stop_criteria(stop_criteria, ref_points=ref_points, threshold=threshold, 
+                                  centroid_density=centroid_density, 
+                                  best_centroid_ix=best_centroid_ix, **kwargs)
         if stop: break
         ref_points.append(best_centroid_ix)
 
-
-    # 3. make groups from the reference points: fuzzy rule based on density evaluation
     G=np.zeros(shape=(D_intra.shape[1],len(ref_points)))
-    for group, centroid_ix in enumerate(ref_points):
-        G[:,group]=np.exp(-radius(ra) * D_intra[centroid_ix,:])
-    
-    point_densities_sum = G.sum(axis=1,keepdims=True)
-    G/=np.where(point_densities_sum==0, np.nan, point_densities_sum)
-    G=np.nan_to_num(G)
+    if kwargs['only_centroids']: 
+        return G, ref_points
+    else:
+        # 3. make groups from the reference points: fuzzy rule based on density evaluation
+        for group, centroid_ix in enumerate(ref_points):
+            G[:,group]=np.exp(-radius(ra) * D_intra[centroid_ix,:])
+        
+        point_densities_sum = G.sum(axis=1,keepdims=True)
+        G/=np.where(point_densities_sum==0, np.nan, point_densities_sum)
+        G=np.nan_to_num(G)
 
-    ## define threshold to define if a point belongs to a group or not
-    mask=G>G.mean(axis=1,keepdims=True)
-    G = G*mask
-    return G, ref_points
+        ## define threshold to define if a point belongs to a group or not
+        mask=G>G.mean(axis=1,keepdims=True)
+        G = G*mask
+        return G, ref_points
 
 # define stop criteria for density substraction
 def update_stop_criteria(x,**kwargs):
@@ -233,4 +220,62 @@ def update_stop_criteria(x,**kwargs):
         return len(kwargs['ref_points'])==kwargs['k']
     if x=='low_density':
         return kwargs['centroid_density']<kwargs['threshold']
+    if x=='unique_centroids':
+        return kwargs['best_centroid_ix'] in kwargs['ref_points']
     return False
+
+def kn_HardCluster(X,norma,cov_i,k_n,tol=1e-3,**kwargs):
+    # initialize centroids and cost function
+    centroids=np.random.default_rng().choice(X,k_n,replace=False)
+
+    J=0
+    while True:
+        # find distances to centroids
+        D_CentroidToX=get_distance_matrix(centroids,X,cov_i,norms=[norma]).squeeze()
+
+        # assign points to closest centroid
+        U=D_CentroidToX.argmin(axis=0)
+
+        new_J=0
+        for ci in range(k_n):
+            mask=U==ci
+            # update cost function
+            new_J+=np.sum(D_CentroidToX[ci][mask]**2)
+            # update centroid
+            if mask.sum()==0:
+                centroids[ci]=np.random.default_rng().choice(X)
+            else:
+                centroids[ci]=X[mask].mean(axis=0)
+        # check convergence
+        if np.abs(J-new_J)<tol:
+            break
+        J=new_J
+    return U, centroids
+
+def kn_FuzzyCluster(X,cov_i,k_n,norma,m=1.01,tol=1e-3, **kwargs):
+    # fuzziness parameter: m->1 -> hard clustering
+
+    # initialize membership matrix
+    U = np.random.rand(X.shape[0],k_n)
+    U /= np.sum(U,axis=1,keepdims=True)
+
+    last_J=0
+    while True:
+        # update centroids
+        centroids = ((U.T**m).dot(X))/((U**m).sum(axis=0,keepdims=True).T)
+        D_CentroidToX=get_distance_matrix(X,centroids,cov_i,norms=[norma]).squeeze()
+
+        # calculate cost function
+        J = np.sum(U**m*D_CentroidToX**2)
+
+        # check convergence
+        if np.abs(last_J-J)<tol: 
+            break
+        last_J=J
+
+        # update membership matrix
+        U_update = 1/(D_CentroidToX**(2/(m-1)))
+        U_update /= np.sum(U_update,axis=1,keepdims=True)
+        U *= U_update
+
+    return U, centroids

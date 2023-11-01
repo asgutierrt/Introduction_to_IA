@@ -22,7 +22,7 @@ def calculate_norms (X,Xi,norma,cov_i):
         num=np.multiply(X,Xi).sum(axis=1)
         den=np.multiply(np.linalg.norm(X,axis=1,ord=2), np.linalg.norm(Xi,ord=2))
         den=np.where(den==0, np.nan, den)
-        return np.nan_to_num(1-num/den)
+        return 1-num/den
     if norma=='mahalanobis': 
         delta=X-Xi
         return np.multiply(np.matmul(delta,cov_i),delta).sum(axis=1)
@@ -49,16 +49,3 @@ def get_distance_matrix(X,Y,cov_i,norms):
   for i,norm in enumerate(norms):
     D[i]=np.array([calculate_norms(X,xi,norm,cov_i) for xi in Y]).T
   return D
-
-def plot_distances(D,norms,png_name):
-  """
-  Creates html visualizations of the distance matrix calculated with different norms.
-  """
-  nrows=int(np.ceil(len(norms)/2)); ncols=2
-  fig=plt.figure(figsize=(9,7))
-  for i in range(len(norms)):
-      ax=plt.subplot(nrows,ncols,i+1)
-      cax=ax.matshow(D[i], cmap=plt.cm.Blues.reversed(), aspect='auto')
-      ax.set_title(norms[i])
-      fig.colorbar(cax, ax=ax,fraction=0.046)
-  plt.tight_layout(); fig.savefig(png_name)
