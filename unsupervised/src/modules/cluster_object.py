@@ -35,7 +35,7 @@ class ClusterProblem:
 
     
     def load_data (self, filename, x_treatment):
-        self.X = load_data(os.path.join('..','data',filename),verbose=False)
+        self.X = load_data(os.path.join('..','data',filename),verbose=True)
         if x_treatment=='encoded':
             self.X = encode(self.X, encoding_layers_dims=[int(self.X.shape[1]*1.2),int(self.X.shape[1]*1.5)], verbose=True)
         elif x_treatment=='umap':

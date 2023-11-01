@@ -21,59 +21,6 @@ Functions:
     - naive: simple, naive_boxes, naive_kn
 """
 
-class ClusterProblem:
-    def __init__(self, X_name, normas, results_path, figs_path):
-        # paths to save results and plots
-        self.result_path = lambda cluster_func_name: join(results_path, cluster_func_name+'_'+X_name+'.txt')
-        self.fig_path = lambda cluster_func_name: join(figs_path, cluster_func_name+'_'+X_name+'.html')
-
-        # data to plot: subtitles (with norm identifier) and dimensions
-        self.normas = normas
-        self.add_norm_name_to = lambda name: [name+'_'+norma for norma in normas]
-
-    def do_cluster(self, cluster_func, **kwargs):
-        '''Iterate over the distance matrix and apply the clustering algorithm to each row'''
-        D=kwargs.pop('D') if 'D' in kwargs else self.normas
-        G, G_ref_points = zip(*[cluster_func(D[i],**kwargs) for i in range(len(self.normas))])
-        return G, G_ref_points
-
-    def do_save_clusters(self,G,cluster_func_name):
-        save_results(G,self.normas,self.result_path(cluster_func_name))
-
-    def do_eval_clusters():
-        return 0
-    
-    def do_ClusterPipeline(self, cluster_func, cluster_func_name, **kwargs):
-        G, G_ref_points = self.do_cluster(cluster_func, **kwargs)
-        self.do_save_clusters(G, cluster_func_name)
-        return G, G_ref_points
-
-
-'''
-tried to parallelize the clustering algorithms - do not run :(
-info here: https://stackoverflow.com/questions/45526700/easy-parallelization-of-numpy-apply-along-axis
-and here: https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
-and here: https://medium.com/@deveshparmar248/python-multiprocessing-maximize-the-cpu-utilization-eec3b60e6d40
-import multiprocessing
-# apply_cluster_func= lambda cluster_func, arr, kwargs: cluster_func(D=arr,**kwargs)
-def parallel_apply_along_axis(cluster_func, arr, **kwargs):
-    """
-    Like numpy.apply_along_axis(), but takes advantage of multiple
-    cores.
-    """        
-    # Effective axis where apply_along_axis() will be applied by each
-    # worker (any non-zero axis number would work, so as to allow the use
-    # of `np.array_split()`, which is only done on axis 0):
-    # Chunks for the mapping (only a few chunks):
-    chunks = [(cluster_func, sub_arr, kwargs) for sub_arr in arr]
-    pool = multiprocessing.Pool(3) #multiprocessing.cpu_count()
-    individual_results = pool.map(func=apply_cluster_func, iterable=chunks)
-    # Freeing the workers:
-    pool.close()
-    pool.join()
-    return np.concatenate(individual_results)
-'''
-
 
 def naive (D,**kwargs):
     """ naive one set per datapoint: groups according to a threshold distance. 
